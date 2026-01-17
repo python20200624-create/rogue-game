@@ -1,24 +1,57 @@
 body {
-    background-color: #222;
+    background-color: #111;
     color: #eee;
-    font-family: 'Courier New', Courier, monospace; /* 等幅フォントが必須 */
+    font-family: 'Courier New', monospace;
     display: flex;
     justify-content: center;
-    align-items: center;
+    align-items: flex-start; /* 上寄せにする */
     height: 100vh;
     margin: 0;
+    padding-top: 20px;
+    touch-action: manipulation; /* ダブルタップ拡大を防止 */
 }
 
 #game-container {
     text-align: center;
+    width: 100%;
+    max-width: 400px; /* スマホ幅に合わせる */
 }
 
+/* ゲーム画面のデザイン */
 #screen {
     background-color: #000;
-    border: 2px solid #555;
+    border: 1px solid #444;
     display: inline-block;
     padding: 10px;
-    font-size: 20px;
-    line-height: 20px;
-    letter-spacing: 5px; /* 横幅の調整 */
+    font-size: 18px; /* スマホでも見やすい大きさ */
+    line-height: 18px;
+    letter-spacing: 3px;
+    font-weight: bold;
+    border-radius: 5px;
 }
+
+/* コントローラーの配置（グリッドレイアウト） */
+#controls {
+    display: grid;
+    grid-template-columns: 60px 60px 60px; /* 3列 */
+    gap: 10px;
+    margin-top: 20px;
+    justify-content: center;
+}
+
+button {
+    width: 60px;
+    height: 60px;
+    font-size: 24px;
+    background-color: #333;
+    color: white;
+    border: 2px solid #555;
+    border-radius: 10px;
+    cursor: pointer;
+    user-select: none; /* 長押し選択防止 */
+}
+
+button:active {
+    background-color: #555;
+}
+
