@@ -1,6 +1,6 @@
-// 設定
-const COLS = 30; // 横
-const ROWS = 15; // 縦
+// 設定（スマホで見やすいように狭くしました）
+const COLS = 15; 
+const ROWS = 15;
 const WALL = '#';
 const FLOOR = '.';
 const PLAYER = '@';
@@ -10,31 +10,36 @@ let map = [];
 let player = { x: 1, y: 1 };
 let level = 1;
 
-// 初期化
 function init() {
     createLevel();
-    
-    window.addEventListener('keydown', (e) => {
-        let dx = 0; let dy = 0;
-        if (e.key === 'ArrowUp') dy = -1;
-        if (e.key === 'ArrowDown') dy = 1;
-        if (e.key === 'ArrowLeft') dx = -1;
-        if (e.key === 'ArrowRight') dx = 1;
-        if (dx !== 0 || dy !== 0) movePlayer(dx, dy);
-    });
+    setupControls(); // ボタン操作の準備
 }
 
-// レベル生成（マップとゴールの配置）
+// コントローラーの設定
+function setupControls() {
+    // PCキーボード用
+    window.addEventListener('keydown', (e) => {
+        if (e.key === 'ArrowUp') movePlayer(0, -1);
+        if (e.key === 'ArrowDown') movePlayer(0, 1);
+        if (e.key === 'ArrowLeft') movePlayer(-1, 0);
+        if (e.key === 'ArrowRight') movePlayer(1, 0);
+    });
+
+    // スマホボタン用
+    document.getElementById('btn-up').addEventListener('click', () => movePlayer(0, -1));
+    document.getElementById('btn-down').addEventListener('click', () => movePlayer(0, 1));
+    document.getElementById('btn-left').addEventListener('click', () => movePlayer(-1, 0));
+    document.getElementById('btn-right').addEventListener('click', () => movePlayer(1, 0));
+}
+
+// レベル生成
 function createLevel() {
     generateMap();
     spawnGoal();
-    // プレイヤー位置のリセット
     player.x = 1; player.y = 1;
     map[player.y][player.x] = FLOOR;
     
-    // 画面の更新
-    document.getElementById('hp').innerText = level; // HPの代わりにレベル表示
-    document.querySelector('#stats').innerHTML = 'Level: ' + level;
+    document.getElementById('level-display').innerText = level;
     draw();
 }
 
@@ -47,14 +52,14 @@ function generateMap() {
             if (y === 0 || y === ROWS - 1 || x === 0 || x === COLS - 1) {
                 row.push(WALL);
             } else {
-                row.push(Math.random() < 0.1 ? WALL : FLOOR);
+                row.push(Math.random() < 0.15 ? WALL : FLOOR); // 壁を少し増やしました
             }
         }
         map.push(row);
     }
 }
 
-// ゴールをランダムな床に配置
+// ゴール配置
 function spawnGoal() {
     let placed = false;
     while (!placed) {
@@ -71,14 +76,18 @@ function spawnGoal() {
 function movePlayer(dx, dy) {
     const nextX = player.x + dx;
     const nextY = player.y + dy;
+    
+    // 画面外チェック
+    if (nextX < 0 || nextX >= COLS || nextY < 0 || nextY >= ROWS) return;
+
     const target = map[nextY][nextX];
 
-    if (target === WALL) return; // 壁なら進まない
+    if (target === WALL) return;
 
     if (target === GOAL) {
-        alert("レベル " + level + " クリア！");
+        alert("Level " + level + " Complete!");
         level++;
-        createLevel(); // 次のレベルへ
+        createLevel();
     } else {
         player.x = nextX;
         player.y = nextY;
