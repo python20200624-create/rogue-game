@@ -1,7 +1,7 @@
 body {
     background-color: #111;
     color: #eee;
-    /* 絵文字が綺麗に出る標準フォントセット */
+    /* フォント指定は念のため残しますが、重要度は下がります */
     font-family: "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", sans-serif;
     display: flex;
     justify-content: center;
@@ -15,8 +15,8 @@ body {
     position: relative;
     text-align: center;
     width: 100%;
-    max-width: 400px;
-    user-select: none; /* 文字選択を防止して連打しやすくする */
+    max-width: 420px; /* マス目が入るように少し広げました */
+    user-select: none;
 }
 
 #status-bar {
@@ -32,20 +32,34 @@ body {
 b { color: yellow; }
 #hp { color: #f55; }
 
-/* ゲーム画面 */
+/* ▼▼▼ ここが最大の変更点 ▼▼▼ */
 #screen {
     background-color: #050505;
-    border: 1px solid #444;
-    display: inline-block;
-    padding: 10px;
-    /* 文字サイズと行間を調整してマップを正方形に近づける */
-    font-size: 20px; 
-    line-height: 1.2; 
-    letter-spacing: 2px;
-    font-weight: normal;
+    border: 2px solid #444;
+    padding: 5px;
     border-radius: 0 0 5px 5px;
-    white-space: pre; /* 改行をそのまま表示 */
+    /* ここで「グリッド（マス目）」を宣言します */
+    display: grid;
+    /* 横13マス、縦13マス。1マスのサイズを32pxに固定 */
+    grid-template-columns: repeat(13, 32px);
+    grid-template-rows: repeat(13, 32px);
+    /* マス目間の隙間を0にする */
+    gap: 0;
+    /* 全体を中央寄せ */
+    justify-content: center;
 }
+
+/* 新しいクラス：1つ1つのマス目の設定 */
+.cell {
+    width: 32px;
+    height: 32px;
+    /* マス目の中の絵文字を中央揃えにする */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 24px; /* 絵文字の大きさ */
+}
+/* ▲▲▲ ここまで ▲▲▲ */
 
 #msg {
     height: 20px;
@@ -72,7 +86,7 @@ button {
     border: 2px solid #555;
     border-radius: 12px;
     cursor: pointer;
-    box-shadow: 0 4px 0 #111; /* ボタンの立体感 */
+    box-shadow: 0 4px 0 #111;
 }
 button:active {
     background-color: #555;
@@ -80,7 +94,6 @@ button:active {
     transform: translateY(2px);
 }
 
-/* レベルアップ画面 */
 .hidden { display: none; }
 
 #levelup-modal {
