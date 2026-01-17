@@ -3,24 +3,38 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Roguelike Mobile</title>
+    <title>Rogue RPG</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
     <div id="game-container">
-        <h3>Mobile Rogue</h3>
-        <div id="stats">Level: <span id="level-display">1</span></div>
+        <div id="status-bar">
+            <span>Level: <b id="level">1</b></span>
+            <span>HP: <b id="hp">100</b>/<span id="max-hp">100</span></span>
+            <span>XP: <b id="xp">0</b></span>
+            <span>ATK: <b id="atk">10</b></span>
+        </div>
         
         <pre id="screen"></pre>
 
+        <div id="msg">ダンジョンに入った...</div>
+
         <div id="controls">
-            <div></div> <button id="btn-up">↑</button>
-            <div></div> <button id="btn-left">←</button>
+            <div></div>
+            <button id="btn-up">↑</button>
+            <div></div>
+            
+            <button id="btn-left">←</button>
             <button id="btn-down">↓</button>
             <button id="btn-right">→</button>
         </div>
-        
-        <p style="font-size:12px; color:#aaa;">PCは矢印キー、スマホはボタンで操作</p>
+
+        <div id="levelup-modal" class="hidden">
+            <h3>LEVEL UP!</h3>
+            <p>どちらを強化しますか？</p>
+            <button id="btn-power" class="levelup-btn">攻撃力 +3</button>
+            <button id="btn-health" class="levelup-btn">最大HP +30</button>
+        </div>
     </div>
     <script src="game.js"></script>
 </body>
