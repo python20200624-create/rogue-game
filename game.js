@@ -1,46 +1,63 @@
 // ■ 設定とアイコン定義
-// ※CSS側もこの数に合わせて repeat(13, ...) としています
 const COLS = 13; 
 const ROWS = 13;
-
-const CH = {
-    wall: '🧱',
-    // 床は空白のままですが、マス目に入れるのでズレません
-    floor: '', 
-    player: '🧙',
-    goal: '🪜',
-    chest: '🎁'
-};
-
-// 敵データ
+const CH = { wall: '🧱', floor: '', player: '🧙', goal: '🪜', chest: '🎁' };
 const MONSTERS = [
     { icon: '🦇', name: 'コウモリ', hp: 15, atk: 3, xp: 5 },
     { icon: '👻', name: 'ゴースト', hp: 30, atk: 8, xp: 12 },
     { icon: '👹', name: 'オーガ',   hp: 60, atk: 15, xp: 25 }
 ];
 
+// ■ サウンド設定（ここが追加部分！）
+// ファイル名が間違っていると鳴らないので注意してください
+const SOUNDS = {
+    bgm: new Audio('bgm.mp3'),
+    attack: new Audio('attack.mp3'),
+    levelup: new Audio('levelup.mp3'),
+    dead: new Audio('dead.mp3')
+};
+// BGMはループ再生する
+SOUNDS.bgm.loop = true;
+SOUNDS.bgm.volume = 0.5; // 音量調整（0.0〜1.0）
+
+// SEを鳴らす関数
+function playSe(name) {
+    const se = SOUNDS[name];
+    if(se) {
+        se.currentTime = 0; // 連続再生できるように巻き戻す
+        se.play().catch(e => console.log("再生エラー:", e)); // エラーが出ても止まらないようにする
+    }
+}
+
+// BGMを開始する関数（最初の操作時に呼ぶ）
+let bgmStarted = false;
+function startBgm() {
+    if (!bgmStarted) {
+        SOUNDS.bgm.play().catch(e => console.log("BGM再生制限:", e));
+        bgmStarted = true;
+    }
+}
+
 // ■ 変数管理
 let map = [];
 let enemies = [];
 let items = [];
-let player = { 
-    x: 1, y: 1, 
-    hp: 100, maxHp: 100, 
-    atk: 10, 
-    xp: 0, nextXp: 50, level: 1 
-};
+let player = { x: 1, y: 1, hp: 100, maxHp: 100, atk: 10, xp: 0, nextXp: 50, level: 1 };
 let level = 1;
 let isGamePaused = false;
 
-// ■ 初期化
 function init() {
     setupControls();
     startNewLevel();
 }
 
-// ■ コントローラー設定
 function setupControls() {
-    const move = (dx, dy) => { if(!isGamePaused) movePlayer(dx, dy); };
+    // 操作時にBGM開始を試みる
+    const move = (dx, dy) => { 
+        startBgm(); // ★ここでBGMスタート
+        if(!isGamePaused) movePlayer(dx, dy); 
+    };
+    
     document.getElementById('btn-up').onclick = () => move(0, -1);
     document.getElementById('btn-down').onclick = () => move(0, 1);
     document.getElementById('btn-left').onclick = () => move(-1, 0);
@@ -48,6 +65,9 @@ function setupControls() {
 
     window.onkeydown = (e) => {
         if(isGamePaused) return;
+        // キー操作でもBGMスタート
+        if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(e.key)) startBgm();
+
         if(e.key === 'ArrowUp') move(0, -1);
         if(e.key === 'ArrowDown') move(0, 1);
         if(e.key === 'ArrowLeft') move(-1, 0);
@@ -58,7 +78,6 @@ function setupControls() {
     document.getElementById('btn-health').onclick = () => chooseUpgrade('hp');
 }
 
-// ■ 新しい階層を作る
 function startNewLevel() {
     let success = false;
     let attempts = 0;
@@ -75,33 +94,27 @@ function startNewLevel() {
     }
     spawnEnemies();
     spawnItems();
-    log(`地下 ${level} 階 (生成:${attempts}回)`);
+    log(`地下 ${level} 階`);
     updateStatus();
     draw();
 }
 
-// ■ マップ生成
 function generateMap() {
     map = [];
     for (let y=0; y<ROWS; y++) {
         let row = [];
         for (let x=0; x<COLS; x++) {
-            if (y===0 || y===ROWS-1 || x===0 || x===COLS-1) {
-                row.push(CH.wall);
-            } else {
-                row.push(Math.random() < 0.2 ? CH.wall : CH.floor);
-            }
+            if (y===0 || y===ROWS-1 || x===0 || x===COLS-1) row.push(CH.wall);
+            else row.push(Math.random() < 0.2 ? CH.wall : CH.floor);
         }
         map.push(row);
     }
 }
 
-// ■ 到達可能かチェック
 function checkReachability(startX, startY, goalX, goalY) {
     let queue = [{x: startX, y: startY}];
     let visited = new Set();
     visited.add(`${startX},${startY}`);
-
     while (queue.length > 0) {
         let p = queue.shift();
         if (p.x === goalX && p.y === goalY) return true;
@@ -116,7 +129,6 @@ function checkReachability(startX, startY, goalX, goalY) {
     return false;
 }
 
-// ■ 敵の配置
 function spawnEnemies() {
     enemies = [];
     const count = 2 + Math.floor(level / 2);
@@ -124,21 +136,15 @@ function spawnEnemies() {
     if (level >= 1) availableTypes.push(MONSTERS[0]);
     if (level >= 3) availableTypes.push(MONSTERS[1]);
     if (level >= 6) availableTypes.push(MONSTERS[2]);
-
     for(let i=0; i<count; i++){
         let pos = placeObject(null, true);
         if(pos) {
             let type = availableTypes[Math.floor(Math.random() * availableTypes.length)];
-            enemies.push({ 
-                x: pos.x, y: pos.y, 
-                ...type, 
-                hp: type.hp + (level * 2)
-            });
+            enemies.push({ x: pos.x, y: pos.y, ...type, hp: type.hp + (level * 2) });
         }
     }
 }
 
-// ■ 宝箱の配置
 function spawnItems() {
     items = [];
     const count = Math.floor(Math.random() * 2) + 1;
@@ -148,7 +154,6 @@ function spawnItems() {
     }
 }
 
-// ■ オブジェクトを置く
 function placeObject(icon, returnOnlyPos=false) {
     for(let i=0; i<100; i++) {
         let x = Math.floor(Math.random()*(COLS-2))+1;
@@ -162,7 +167,6 @@ function placeObject(icon, returnOnlyPos=false) {
     return null;
 }
 
-// ■ プレイヤー移動
 function movePlayer(dx, dy) {
     const nx = player.x + dx, ny = player.y + dy;
     const target = map[ny][nx];
@@ -197,13 +201,14 @@ function movePlayer(dx, dy) {
     }
 }
 
-// ■ 宝箱処理
 function openChest(index) {
     if (Math.random() < 0.7) {
+        playSe('levelup'); // ★アイテムゲット音（仮）
         let heal = 30;
         player.hp = Math.min(player.hp + heal, player.maxHp);
         log(`宝箱だ！薬を見つけた(HP+${heal})`);
     } else {
+        playSe('attack'); // ★罠の爆発音
         let dmg = 15;
         player.hp -= dmg;
         log(`罠だ！爆発した！(HP-${dmg})`);
@@ -212,8 +217,8 @@ function openChest(index) {
     updateStatus();
 }
 
-// ■ 戦闘処理
 function attackEnemy(enemy) {
+    playSe('attack'); // ★攻撃音
     enemy.hp -= player.atk;
     log(`${enemy.name}に${player.atk}のダメージ！`);
     if (enemy.hp <= 0) {
@@ -231,6 +236,7 @@ function moveEnemies() {
         const nx = e.x + dx, ny = e.y + dy;
         
         if (nx === player.x && ny === player.y) {
+            playSe('attack'); // ★敵の攻撃音
             player.hp -= e.atk;
             log(`${e.name}の攻撃！(${e.atk}ダメ)`);
             checkGameOver();
@@ -240,7 +246,6 @@ function moveEnemies() {
         let hitObj = map[ny][nx] !== CH.floor;
         let hitEnemy = enemies.find(en => en.x === nx && en.y === ny);
         let hitItem = items.find(i => i.x === nx && i.y === ny);
-
         if (!hitObj && !hitEnemy && !hitItem) {
             e.x = nx; e.y = ny;
         }
@@ -250,6 +255,8 @@ function moveEnemies() {
 
 function checkGameOver() {
     if (player.hp <= 0) {
+        SOUNDS.bgm.pause(); // BGM止める
+        playSe('dead');     // ★死亡音
         player.hp = 0;
         updateStatus();
         alert(`💀 GAME OVER 💀\n到達階層: ${level}`);
@@ -257,10 +264,10 @@ function checkGameOver() {
     }
 }
 
-// ■ 経験値とレベルアップ
 function gainXp(amount) {
     player.xp += amount;
     if (player.xp >= player.nextXp) {
+        playSe('levelup'); // ★レベルアップ音
         player.level++;
         player.xp -= player.nextXp;
         player.nextXp = Math.floor(player.nextXp * 1.5);
@@ -285,7 +292,6 @@ function chooseUpgrade(type) {
     draw();
 }
 
-// ■ ステータス更新
 function updateStatus() {
     document.getElementById('level').innerText = level;
     document.getElementById('hp').innerText = player.hp;
@@ -298,40 +304,23 @@ function log(text) {
     document.getElementById('msg').innerText = text;
 }
 
-// ▼▼▼ ここが変更された描画関数 ▼▼▼
 function draw() {
     const screen = document.getElementById('screen');
-    // 一度画面を空っぽにする
     screen.innerHTML = '';
-
-    // マス目を一個ずつ作って並べていく
     for (let y=0; y<ROWS; y++) {
         for (let x=0; x<COLS; x++) {
-            // 1. マス目の入れ物（div）を作る
             const cell = document.createElement('div');
-            cell.className = 'cell'; // CSSで定義したスタイルを適用
-
-            // 2. そのマスに入れる絵文字を決める
+            cell.className = 'cell';
             let char = map[y][x];
             let enemy = enemies.find(e => e.x === x && e.y === y);
             let item = items.find(i => i.x === x && i.y === y);
-
-            if (x === player.x && y === player.y) {
-                char = CH.player;
-            } else if (enemy) {
-                char = enemy.icon;
-            } else if (item) {
-                char = CH.chest;
-            }
-
-            // 3. マス目に絵文字を入れる
+            if (x === player.x && y === player.y) char = CH.player;
+            else if (enemy) char = enemy.icon;
+            else if (item) char = CH.chest;
             cell.innerText = char;
-
-            // 4. 画面に追加する
             screen.appendChild(cell);
         }
     }
 }
-// ▲▲▲ ここまで ▲▲▲
 
 init();
